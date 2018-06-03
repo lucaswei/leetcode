@@ -37,60 +37,54 @@ class Solution(object):
         :rtype: List[int]
         """
         logger.debug("s:{}, word: {}".format(s, words))
-        tSet = set(words)
-
-        # build indexed hint list
-        # hit[offset] -> ['word1', 'word2']
-        hit = [[] for i in range(len(s))]
-        indices = []
-        acct = {}
-        for word in set(words):
-            i = 0
-            while True:
-                try:
-                    index = s.index(word, i)
-                except ValueError:
-                    break
-                hit[index].append(word)
-                i = index + 1
-        logger.debug(hit)
+        TargetDict = {}
         for word in words:
-            if word not in acct:
-                acct[word] = 0
-            acct[word] += 1
+            if word not in TargetDict:
+                TargetDict[word] = 0
+            TargetDict[word] += 1
+        nr_word = len(words)
+        if len(words) <= 0:
+            return []
+        word_length = len(words[0])
+        index = []
 
-        for offset in range(len(s)):
-            if self.startToSearch(hit, offset, acct, len(words)):
-                indices.append(offset)
-        return indices
-                    
+        for i in range(len(s) - (word_length - 1)):
+            word = s[i:i+word_length]
+            if word not in words:
+                continue
 
-    def startToSearch(self, hit, index, acct, length):
-        logger.debug("[{}]: {}".format(index, acct))
-        result = False
-        if index >= len(hit):
-            return False
-        for word in hit[index]:
-            if acct[word] <= 0:
-                return False
-            if length-1  == 0:
-                return True
-            acct[word] -= 1
-            result = self.startToSearch(hit, index+len(word), acct, length-1)
-            acct[word] += 1
-            if result:
+            #incefficient left char for concation
+            if len(s) - i < nr_word*word_length:
                 break
-        return result
+            result = self.trySearch(s, i, i+nr_word*word_length, TargetDict, word_length)
+            if result >= 0:
+                index.append(result)
+        return index
+
+    def trySearch(self, s, start, end, TargetDict, word_length):
+        logger.info("search: {}".format(s[start:end]))
+        tmpDict = {}
+        for i in range(start, end, word_length):
+            word = s[i:i+word_length]
+            if word not in TargetDict:
+                return -1
+            if word not in tmpDict:
+                tmpDict[word] = 0
+            tmpDict[word] += 1
+            if word in tmpDict and tmpDict[word] > TargetDict[word]:
+                return -1
+        return start
 
 
 
 if __name__ == '__main__':
     s = "barfoothefoobarman"
     words = ["foo","bar"]
-    assert Solution().findSubstring(s, words) == [0, 9]
-    s = "wordgoodstudentgoodword"
-    words = ["word","student"]
-    assert Solution().findSubstring(s, words) == []
+    try:
+        result = Solution().findSubstring(s, words)
+        assert result == [0, 9]
+    except AssertionError:
+        logger.error(result)
     s = "barfoobarfoobar"
     words = ["foo","bar"]
     try:
@@ -98,13 +92,16 @@ if __name__ == '__main__':
         assert result == [0,3,6,9]
     except AssertionError:
         logger.error(result)
+
     s = "wordgoodgoodgoodbestword"
     words = ["word","good","best","word"]
     try:
         result = Solution().findSubstring(s, words)
-        assert result == [0,3,6,9]
+        answer = []
+        assert result == answer
     except AssertionError:
         logger.error(result)
+        logger.error("should be {}".format(answer))
     s = "aaaaaaaa"
     words = ["aa","aa","aa"]
     try:
@@ -112,10 +109,10 @@ if __name__ == '__main__':
         assert result == [0,1,2]
     except AssertionError:
         logger.error(result)
-    s = "a"*10000
-    words = list(s)
+    s = "a"
+    words = ["a"]
     try:
         result = Solution().findSubstring(s, words)
-        assert result == [0,1,2]
+        assert result == [0]
     except AssertionError:
         logger.error(result)
